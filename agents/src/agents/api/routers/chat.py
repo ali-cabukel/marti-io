@@ -61,13 +61,14 @@ async def chat(request: Request, body: ChatRequest) -> ChatResponse:
             config=config,
         )
     except Exception as exc:
+        error = f"{type(exc).__name__}: {exc}" if str(exc) else type(exc).__name__
         log_payload(
             logger,
             "chat.error",
-            {"thread_id": body.thread_id, "graph": body.graph, "error": str(exc)},
+            {"thread_id": body.thread_id, "graph": body.graph, "error": error},
             level=logging.ERROR,
         )
-        raise HTTPException(status_code=500, detail=str(exc)) from exc
+        raise HTTPException(status_code=500, detail=error) from exc
 
     last = result["messages"][-1]
     response = ChatResponse(

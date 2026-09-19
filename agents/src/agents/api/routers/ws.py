@@ -88,15 +88,16 @@ async def _stream_chat(
                     },
                 )
     except Exception as exc:
+        error = f"{type(exc).__name__}: {exc}" if str(exc) else type(exc).__name__
         log_payload(
             logger,
             "ws.chat.error",
-            {"thread_id": thread_id, "graph": graph_kind, "error": str(exc)},
+            {"thread_id": thread_id, "graph": graph_kind, "error": error},
             level=logging.ERROR,
         )
         await manager.publish(
             thread_id,
-            {"type": "error", "message": str(exc)},
+            {"type": "error", "message": error},
         )
         return
 

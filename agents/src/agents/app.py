@@ -47,7 +47,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 "static_dir": str(settings.static_dir),
             },
         )
-        init_checkpointer(settings)
+        await init_checkpointer(settings)
         redis = await init_redis(settings)
         init_ws_manager(redis)
         log_payload(
@@ -57,7 +57,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         )
         yield
         await shutdown_redis()
-        shutdown_checkpointer()
+        await shutdown_checkpointer()
         log_payload(logger, "app.shutdown", {})
 
     app = FastAPI(
