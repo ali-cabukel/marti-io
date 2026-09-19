@@ -2,50 +2,54 @@
 
 from __future__ import annotations
 
-import sqlite3
 from typing import Any
 
+import aiosqlite
 from langgraph.checkpoint.memory import MemorySaver
-from langgraph.checkpoint.postgres import PostgresSaver
-from langgraph.checkpoint.sqlite import SqliteSaver
-from psycopg import Connection
+from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
+from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
+from psycopg import AsyncConnection
 from psycopg.rows import dict_row
 from psycopg.sql import SQL, Identifier
 
 from agents.settings import Settings
 
 _checkpointer: Any | None = None
-_pg_conn: Connection | None = None
-_sqlite_conn: sqlite3.Connection | None = None
+_pg_conn: AsyncConnection | None = None
+_sqlite_conn: aiosqlite.Connection | None = None
 
 
-def _prepare_postgres_schema(conn: Connection, schema: str) -> None:
-    conn.execute(SQL("CREATE SCHEMA IF NOT EXISTS {}").format(Identifier(schema)))
-    conn.execute(SQL("SET search_path TO {}, public").format(Identifier(schema)))
+async def _prepare_postgres_schema(conn: AsyncConnection, schema: str) -> None:
+    ident = Identifier(schema)
+    await conn.execute(SQL("CREATE SCHEMA IF NOT EXISTS {}").format(ident))
+    await conn.execute(SQL("SET search_path TO {}, public").format(ident))
 
 
-def init_checkpointer(settings: Settings):
-    """Create and configure the process-wide checkpointer."""
+async def init_checkpointer(settings: Settings):
+    """Create and configure the process-wide async checkpointer."""
     global _checkpointer, _pg_conn, _sqlite_conn
 
     if settings.checkpointer == "postgres":
-        _pg_conn = Connection.connect(
+        _pg_conn = await AsyncConnection.connect(
             settings.database_url,
             autocommit=True,
+            prepare_threshold=0,
             row_factory=dict_row,
         )
         schema = settings.effective_database_schema
         if schema:
-            _prepare_postgres_schema(_pg_conn, schema)
-        saver = PostgresSaver(_pg_conn)
-        saver.setup()
+            await _prepare_postgres_schema(_pg_conn, schema)
+        saver = AsyncPostgresSaver(conn=_pg_conn)
+        await saver.setup()
         _checkpointer = saver
         return _checkpointer
 
     if settings.checkpointer == "sqlite":
         settings.sqlite_path.parent.mkdir(parents=True, exist_ok=True)
-        _sqlite_conn = sqlite3.connect(str(settings.sqlite_path), check_same_thread=False)
-        _checkpointer = SqliteSaver(_sqlite_conn)
+        _sqlite_conn = await aiosqlite.connect(str(settings.sqlite_path))
+        saver = AsyncSqliteSaver(_sqlite_conn)
+        await saver.setup()
+        _checkpointer = saver
         return _checkpointer
 
     _checkpointer = MemorySaver()
@@ -54,17 +58,19 @@ def init_checkpointer(settings: Settings):
 
 def get_checkpointer():
     if _checkpointer is None:
-        raise RuntimeError("Checkpointer not initialized — call init_checkpointer() at startup")
+        raise RuntimeError(
+            "Checkpointer not initialized — call init_checkpointer() at startup"
+        )
     return _checkpointer
 
 
-def shutdown_checkpointer() -> None:
+async def shutdown_checkpointer() -> None:
     global _checkpointer, _pg_conn, _sqlite_conn
 
     _checkpointer = None
     if _pg_conn is not None:
-        _pg_conn.close()
+        await _pg_conn.close()
         _pg_conn = None
     if _sqlite_conn is not None:
-        _sqlite_conn.close()
+        await _sqlite_conn.close()
         _sqlite_conn = None
