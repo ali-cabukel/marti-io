@@ -74,11 +74,14 @@ def _llm(settings: Settings):
 
 
 def _chat_model(settings: Settings) -> ChatOpenAI:
-    return ChatOpenAI(
-        model=settings.openai_model,
-        temperature=0,
-        api_key=settings.openai_api_key,
-    )
+    kwargs: dict[str, object] = {
+        "model": settings.openai_model,
+        "temperature": 0,
+        "api_key": settings.openai_api_key,
+    }
+    if settings.openai_base_url:
+        kwargs["base_url"] = settings.openai_base_url
+    return ChatOpenAI(**kwargs)
 
 
 def _tool_node(state: ChatState):

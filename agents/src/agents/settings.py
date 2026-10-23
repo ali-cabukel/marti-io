@@ -40,6 +40,7 @@ class Settings(BaseSettings):
     rate_limit_chat: str = Field(default="20/minute", validation_alias="RATE_LIMIT_CHAT")
 
     openai_api_key: str | None = Field(default=None, validation_alias="OPENAI_API_KEY")
+    openai_base_url: str | None = Field(default=None, validation_alias="OPENAI_BASE_URL")
     openai_model: str = Field(default="gpt-4o-mini", validation_alias="OPENAI_MODEL")
 
     news_api_key: str | None = Field(default=None, validation_alias="NEWS_API_KEY")
@@ -72,6 +73,15 @@ class Settings(BaseSettings):
         if value is None:
             return ""
         return str(value).strip()
+
+    @field_validator("openai_base_url", mode="before")
+    @classmethod
+    def empty_openai_base_url_is_none(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        if isinstance(value, str) and not value.strip():
+            return None
+        return value.strip()
 
     @field_validator("redis_url", mode="before")
     @classmethod
@@ -192,3 +202,5 @@ def apply_settings_to_env(settings: Settings) -> None:
 
     if settings.openai_api_key:
         os.environ["OPENAI_API_KEY"] = settings.openai_api_key
+    if settings.openai_base_url:
+        os.environ["OPENAI_BASE_URL"] = settings.openai_base_url
