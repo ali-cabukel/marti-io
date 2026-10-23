@@ -19,3 +19,4 @@ agents/web/node_modules/
 agents/data/
 agents/checkpoints.db
 *.db
+/node_modules
