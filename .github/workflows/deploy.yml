@@ -65,5 +65,5 @@ jobs:
             --timeout=3600 \
             --min-instances=0 \
             --max-instances=1 \
-            --update-env-vars="APP_ENV=production,API_PREFIX=/api,API_HOST=0.0.0.0,API_PORT=8000,API_RELOAD=false,WS_PING_INTERVAL=30,WS_PING_TIMEOUT=30,TIMEOUT_KEEP_ALIVE=120,RATE_LIMIT_DEFAULT=60/minute,RATE_LIMIT_CHAT=20/minute,OPENAI_MODEL=gpt-4o-mini,CHECKPOINTER=postgres,DATABASE_SCHEMA=marti-io" \
+            --update-env-vars="APP_ENV=production,API_PREFIX=/api,API_HOST=0.0.0.0,API_PORT=8000,API_RELOAD=false,WS_PING_INTERVAL=30,WS_PING_TIMEOUT=30,TIMEOUT_KEEP_ALIVE=120,RATE_LIMIT_DEFAULT=60/minute,RATE_LIMIT_CHAT=20/minute,OPENAI_BASE_URL=https://openrouter.ai/api/v1,OPENAI_MODEL=openai/gpt-4o-mini,CHECKPOINTER=postgres,DATABASE_SCHEMA=marti-io" \
             --update-secrets="OPENAI_API_KEY=OPENAI_API_KEY:latest,DATABASE_URL=DATABASE_URL:latest"
